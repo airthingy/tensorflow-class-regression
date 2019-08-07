@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import pickle
 
 used_features = [
     'property_type', 'room_type', 'bathrooms', 'bedrooms', 'beds', 'bed_type',
@@ -21,7 +22,11 @@ for feature in ["cleaning_fee", "security_deposit", "price"]:
 for feature in ["bathrooms", "bedrooms", "beds", "review_scores_value"]:
     source_data[feature].fillna(source_data[feature].median(), inplace=True)
 
+# Fill in missing data with reasonable defualt.
+# If this is not possible we need to exclude such bad data
 source_data['property_type'].fillna('Apartment', inplace=True)
+source_data['host_is_superhost'].fillna('f', inplace=True)
+source_data['host_total_listings_count'].fillna(1, inplace=True)
 
 #Filter out too expensive and too cheap properties
 source_data = source_data[(source_data["price"] > 50)
@@ -53,8 +58,9 @@ categorical_columns = [
     'room_type', 'bed_type', 'instant_bookable'
 ]
 
-vocabulary = {} #Empty dictionary
+vocabulary = dict() #Empty dictionary
 for feature in categorical_columns:
     vocabulary[feature] = source_data[feature].unique()
 
-np.save("vocabulary.npy", vocabulary)
+with open("vocabulary.pkl", "wb") as f:
+    pickle.dump(vocabulary, f)
