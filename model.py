@@ -66,4 +66,18 @@ def evaluate_model():
     result = linear_regressor.evaluate(input_fn = eval_input_fn)
     print(result)
 
-evaluate_model()
+def predict():
+    linear_regressor = build_model()
+    test_features = pd.read_csv("test_features.csv")
+
+    predict_input_fn = tf.estimator.inputs.pandas_input_fn(x=test_features,
+                                                            y=None,
+                                                            batch_size=32,
+                                                            shuffle=False,
+                                                            num_epochs=1)
+    results = linear_regressor.predict(input_fn = predict_input_fn)
+    
+    for r in results:
+        print(r["predictions"])
+
+predict()
