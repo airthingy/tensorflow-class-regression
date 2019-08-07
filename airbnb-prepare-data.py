@@ -27,14 +27,18 @@ source_data['property_type'].fillna('Apartment',inplace = True)
 source_data = source_data[(source_data["price"]>50)&(source_data["price"]<500)]
 
 # Split source into training and test data
-train=source_data.sample(frac=0.8,random_state=200)
-test=source_data.drop(train.index)
+train = source_data.sample(frac=0.8,random_state=200)
+test = source_data.drop(train.index)
 
 train_price = train["price"]
 test_price = test["price"]
 train_features = train.drop("price", axis=1)
 test_features = test.drop("price", axis=1)
 
+# Spread out price by taking a log. Otherwise prices are very close to each other
+# which makes prediction less accurate
+train_price = np.log(train_price)
+test_price = np.log(test_price)
 
 # Save split data in files
 train_price.to_csv("train_price.csv", header=True, index=False)
