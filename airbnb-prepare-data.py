@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 used_features = [
-    'id', 'property_type', 'room_type', 'bathrooms', 'bedrooms', 'beds', 'bed_type',
+    'property_type', 'room_type', 'bathrooms', 'bedrooms', 'beds', 'bed_type',
     'accommodates', 'host_total_listings_count', 'number_of_reviews',
     'review_scores_value', 'neighbourhood_cleansed', 'cleaning_fee',
     'minimum_nights', 'security_deposit', 'host_is_superhost',
