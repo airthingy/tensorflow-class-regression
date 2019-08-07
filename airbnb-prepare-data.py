@@ -21,13 +21,14 @@ for feature in ["cleaning_fee", "security_deposit", "price"]:
 for feature in ["bathrooms", "bedrooms", "beds", "review_scores_value"]:
     source_data[feature].fillna(source_data[feature].median(), inplace=True)
 
-source_data['property_type'].fillna('Apartment',inplace = True)
+source_data['property_type'].fillna('Apartment', inplace=True)
 
 #Filter out too expensive and too cheap properties
-source_data = source_data[(source_data["price"]>50)&(source_data["price"]<500)]
+source_data = source_data[(source_data["price"] > 50)
+                          & (source_data["price"] < 500)]
 
 # Split source into training and test data
-train = source_data.sample(frac=0.8,random_state=200)
+train = source_data.sample(frac=0.8, random_state=200)
 test = source_data.drop(train.index)
 
 train_price = train["price"]
@@ -45,3 +46,15 @@ train_price.to_csv("train_price.csv", header=True, index=False)
 test_price.to_csv("test_price.csv", header=True, index=False)
 train_features.to_csv("train_features.csv", header=True, index=False)
 test_features.to_csv("test_features.csv", header=True, index=False)
+
+# Save the unique category values
+categorical_columns = [
+    'host_is_superhost', 'neighbourhood_cleansed', 'property_type',
+    'room_type', 'bed_type', 'instant_bookable'
+]
+
+vocabulary = {} #Empty dictionary
+for feature in categorical_columns:
+    vocabulary[feature] = source_data[feature].unique()
+
+np.save("vocabulary.npy", vocabulary)
