@@ -1,3 +1,4 @@
 *.csv
 *.pkl
 .vscode/
+linear_regressor/
