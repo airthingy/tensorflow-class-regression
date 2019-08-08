@@ -11,7 +11,7 @@ def train_model():
                                                             y=train_prices["price"],
                                                             batch_size=32,
                                                             shuffle=True,
-                                                            num_epochs=None)
+                                                            num_epochs=100)
     nn_regressor.train(input_fn = training_input_fn,steps=2000)
 
 train_model()
