@@ -22,6 +22,7 @@ with tf.Session() as sess:
     for train_step in range(40001):
         sess.run(train, {X:train_x, Y:train_y})
 
+        # Print training progress
         if train_step % 2000 == 0:
             error_rate = sess.run(loss, {X:train_x, Y:train_y})
     
