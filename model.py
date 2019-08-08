@@ -3,19 +3,19 @@ import pickle
 
 def build_model():
     # Define the numeric feature columns
-    numeric_columns = [
+    numeric_features = [
         'host_total_listings_count', 'accommodates', 'bathrooms', 'bedrooms',
         'beds', 'security_deposit', 'cleaning_fee', 'minimum_nights',
         'number_of_reviews', 'review_scores_value'
     ]
 
-    numeric_features = [
-        tf.feature_column.numeric_column(key=column)
-        for column in numeric_columns
+    numeric_columns = [
+        tf.feature_column.numeric_column(key=feature)
+        for feature in numeric_features
     ]
 
     # Define the category feature columns
-    categorical_columns = [
+    categorical_features = [
         'host_is_superhost', 'neighbourhood_cleansed', 'property_type',
         'room_type', 'bed_type', 'instant_bookable'
     ]
@@ -24,15 +24,15 @@ def build_model():
     with open("vocabulary.pkl", "rb") as f:
         vocabulary = pickle.load(f)
 
-    categorical_features = [
+    categorical_columns = [
         tf.feature_column.categorical_column_with_vocabulary_list(
-            key=column, vocabulary_list=vocabulary[column])
-        for column in categorical_columns
+            key=feature, vocabulary_list=vocabulary[feature])
+        for feature in categorical_features
     ]
 
-    linear_features = numeric_features + categorical_features
+    all_columns = numeric_columns + categorical_columns
 
     linear_regressor = tf.estimator.LinearRegressor(
-        feature_columns=linear_features, model_dir="linear_regressor")
+        feature_columns=all_columns, model_dir="linear_regressor")
 
     return linear_regressor
