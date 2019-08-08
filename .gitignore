@@ -2,3 +2,4 @@
 *.pkl
 .vscode/
 linear_regressor/
+__pycache__/
