@@ -1,42 +1,30 @@
 import tensorflow.compat.v1 as tf
 import numpy as np
 
-def generate_training_data(batch_size):
-    x = np.zeros([batch_size, 3])
-    y = np.zeros([batch_size, 1])
+# Weight and bias variables initialized to 0
+W = tf.Variable([0.0])
+b = tf.Variable([0.0])
 
-    for index in range(0, batch_size):
-        x[index, 0] = (index * 3 + 1.0) * 0.001
-        x[index, 1] = (index * 3 + 2.0) * 0.001
-        x[index, 2] = (index * 3 + 3.0) * 0.001
-        y[index, 0] = x[index, 0] + 3.7 * x[index, 1] + 5.9 * x[index, 2]
-    
-    return (x, y)
+X = tf.placeholder(tf.float32)
+Y = tf.placeholder(tf.float32)
 
-W = tf.Variable(tf.truncated_normal([3, 1], stddev=0.001))
-b = tf.Variable(tf.truncated_normal([1], stddev=0.001))
-
-X = tf.placeholder(tf.float32, [None, 3])
-Y = tf.placeholder(tf.float32, [None, 1])
-
-labels = tf.add(tf.matmul(X, W), b)
+labels = W * X + b
 loss = tf.reduce_mean(tf.square(labels - Y))
-train = tf.train.GradientDescentOptimizer(0.01).minimize(loss)
+train = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
 
-x, y = generate_training_data(30)
-
-print(x)
-print(y)
+# Sample imput data. y = 3.x + 4
+train_x = np.array([1.0, 2.0, 3.0, 4.0])
+train_y = train_x * 3.0 + 4.0
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
 
     for train_step in range(40001):
-        sess.run(train, {X:x, Y:y})
-
-        error_rate = sess.run(loss, {X:x, Y:y})
+        sess.run(train, {X:train_x, Y:train_y})
 
         if train_step % 2000 == 0:
+            error_rate = sess.run(loss, {X:train_x, Y:train_y})
+    
             print("Step:", train_step, 
                 "W:", sess.run(W), 
                 "b:", sess.run(b), 
@@ -44,5 +32,5 @@ with tf.Session() as sess:
             if error_rate < 0.0001:
                 break
 
-    # x_unseen = [[6.0, 7.0, 8.0]]
-    # print("Predections:", sess.run(labels, {X:x_unseen}))
+    x_unseen = [6.0, 7.0, 8.0]
+    print("Predections:", sess.run(labels, {X:x_unseen}))
