@@ -243,17 +243,20 @@ import tensorflow.compat.v1 as tf
 import numpy as np
 ```
 
-In our problem we have only one weight and one bias. Let's declare them as a 1x1 matrix.
+Weight is a ``nx1`` vector where ``n`` is the number of features in a problem. We have a single feature only. Let's declare it as a ``1x1`` matrix.
 
 ```python
-# Weight and bias variables as 1x1 matrix initialized to 0
+# Weight as 1x1 matrix initialized to 0
 W = tf.Variable([[0.0]])
-b = tf.Variable([[0.0]])
 ```
 
->**Important:** ``tf.matmul()`` expects the matrices to be at minimum 2D. This is why we had to create ``W`` and ``b`` as 1x1 matrix and not a one dimensional vector.
+Bias is just a single (scalar) variable in linear regression.
 
-Next, declare the input placeholders. They have dimension of mx1 where m is the number of training samples (not known when writing code).
+```python
+b = tf.Variable(0.0)
+```
+
+Next, declare the input placeholders. ``X`` has dimension of ``mxn`` where ``m`` is the number of training samples (not known when writing code) and ``n`` is the number of features. Prediction ``Y`` is always ``mx1`` in linear regression (one prediction for each sample data).
 
 ```python
 X = tf.placeholder(tf.float32, [None, 1])
@@ -267,6 +270,8 @@ predictions = tf.add(tf.matmul(X, W), b)
 loss = tf.reduce_mean(tf.square(predictions - Y))
 model = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
 ```
+
+>**Check:** Audit the dimensions of ``X`` and ``W``. Can they be legally multiplied? What will be the dimension of ``predictions``?
 
 ## Generate Training Data
 Normally training data is loaded from disk. But in our simple example we can just generate it. Add these lines.

@@ -3,7 +3,7 @@ import numpy as np
 
 # Weight and bias variables initialized to 0
 W = tf.Variable([[0.0]])
-b = tf.Variable([[0.0]])
+b = tf.Variable(0.0)
 
 X = tf.placeholder(tf.float32, [None, 1])
 Y = tf.placeholder(tf.float32, [None, 1])
