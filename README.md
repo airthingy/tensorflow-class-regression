@@ -193,7 +193,10 @@ Save and run the file. Make sure you see this result.
 
 >**Numpy Array:** Here we are feeding plain Python lists to the placeholders. Tensorflow also allows feeding numpy arrays. In real life you will mostly work with numpy arrays.
 
-Note: To do elementwise multiplication of two matrices of same dimension you use ``tf.multiply(X, Y)`` or just the ``X * Y`` syntax.
+Note: 
+
+- As of Python 3.5 you can use the ``@`` operator for matrix multiplication. Example: ``X @ Y``. But I recommend you keep using ``tf.matmul()`` for better readability.
+- To do elementwise multiplication of two matrices of same dimension you use ``tf.multiply(X, Y)`` or just the ``X * Y`` syntax.
 
 ### Unknown Dimensions
 In the code above we have precisely stated the matrix dimensions as 4x2 and 2x4. In real life there will be some dimensions that you will not know when writing the code. For example, you may not know how many sample data are available in the training dataset. Tensorflow is very flexible in this regard. You can use ``None`` as the dimension in those cases. At execution time Tensorflow will make sure that the actual dimensions of the data fed to the model are valid for the requested matrix operation.
@@ -208,6 +211,160 @@ Y = tf.placeholder(tf.float32, [2, None])
 Now at execution time the missing dimensions will be filled in based on the data that is fed to the model.
 
 Save and run the file. You should see the same result.
+
+# Workshop - Simple Linear Regression
+In linear regression system learns weights and bias from training data such that it can fit a line through the data most accurately (with least amount of error). Using this technique you can solve problems like housing price prediction.
+
+During training error (also called loss) is gradually minimized using a technique called Gradient Descent.
+
+Linear regression may be one of the simplest ML techniques but it forms the foundation for other learning algorithms. This is why we need to spend a bit of time fully understanding how this works.
+
+In this workshop we will solve a very simple problem. We will train the system using test data that we know follows this equation.
+
+```
+y = 3x + 4
+```
+
+At the end of training the model should discover that the weight is 3.0 and bias is 4.0.
+
+We keep the problem purposely simple. The focus of this workshop is:
+
+- How to run training that discovers the weights and biases for least error.
+- How to run prediction
+- How to save and restore weights and biases
+
+## Define the Model
+Create a file called ``simple-regression.py``.
+
+Add these import statements.
+
+```python
+import tensorflow.compat.v1 as tf
+import numpy as np
+```
+
+In our problem we have only one weight and one bias. Let's declare them as a 1x1 matrix.
+
+```python
+# Weight and bias variables as 1x1 matrix initialized to 0
+W = tf.Variable([[0.0]])
+b = tf.Variable([[0.0]])
+```
+
+>**Important:** ``tf.matmul()`` expects the matrices to be at minimum 2D. This is why we had to create ``W`` and ``b`` as 1x1 matrix and not a one dimensional vector.
+
+Next, declare the input placeholders. They have dimension of mx1 where m is the number of training samples (not known when writing code).
+
+```python
+X = tf.placeholder(tf.float32, [None, 1])
+Y = tf.placeholder(tf.float32, [None, 1])
+```
+
+Finally, declare the model like this.
+
+```python
+predictions = tf.add(tf.matmul(X, W), b)
+loss = tf.reduce_mean(tf.square(predictions - Y))
+model = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+```
+
+## Generate Training Data
+Normally training data is loaded from disk. But in our simple example we can just generate it. Add these lines.
+
+```python
+# Sample imput data. y = 3x + 4
+train_x = np.array([[1.0], [2.0], [3.0], [4.0]])
+train_y = train_x * 3.0 + 4.0
+```
+
+We will feed ``train_x`` to ``X`` and ``train_y`` to ``Y``. Verify that their dimensions match up.
+
+## Training and Prediction
+Add this code.
+
+```python
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+
+    for train_step in range(40001):
+        sess.run(model, {X:train_x, Y:train_y})
+
+        # Print training progress
+        if train_step % 2000 == 0:
+            error_rate = sess.run(loss, {X:train_x, Y:train_y})
+    
+            print("Step:", train_step, 
+                "W:", sess.run(W), 
+                "b:", sess.run(b), 
+                "Loss:", error_rate)
+            if error_rate < 0.0001:
+                break
+
+    # Validate the model with data not used in training
+    x_unseen = np.array([[6.0], [7.0], [8.0]])
+    y_expected = x_unseen * 3.0 + 4.0
+    print("Predections:", sess.run(predictions, {X:x_unseen}))
+    print("Expected:", y_expected)
+```
+
+## Run Code
+Save your file and run it like this.
+
+```
+python3 simple-regression.py
+```
+
+Note as training progresses the weight and bias converge on 3 and 4 respectively. Also verify that prediction on unseen data is very close to what is expected.
+
+## Separate Training and Prediction Phases
+Right now our code is running training and prediction in the same Tensorflow session. That is not how things work in real life. Training can take hours to days depending on how complex the model is and how much training data you have. Prediction is actually used by the end user perhaps from a web site or a microservice. Code for these two phases are developed and deployed independently. 
+
+Basic steps to separate these two phases go like this:
+
+- At the end of training save the weights and biases (collectively called parameters) to disk.
+- During prediction these weights and biases are loaded from disk. Variables are initialized with these values. As a result, these parameter files need to be deployed to production along with the prediction code.
+
+Below the line:
+
+```python
+with tf.Session() as sess:
+```
+
+Add:
+
+```python
+saver = tf.train.Saver()
+```
+
+Save the parameters when training is done.
+
+```python
+if error_rate < 0.0001:
+    saver.save(sess, "./model.ckpt")
+
+    break
+```
+
+Move the prediction code in its own separate session scope.
+
+```python
+with tf.Session() as sess:
+    saver = tf.train.Saver()
+    sess.run(tf.global_variables_initializer())
+
+    # Load the weights and biases
+    saver.restore(sess, "./model.ckpt")
+
+    # Validate the model with data not used in training
+    x_unseen = np.array([[6.0], [7.0], [8.0]])
+    y_expected = x_unseen * 3.0 + 4.0
+    print("Predections:", sess.run(predictions, {X:x_unseen}))
+    print("Expected:", y_expected)
+```
+
+Save file and run it. The result will be the same as before.
+
+>**Tip:** The ``predictions`` node of the graph is used during the prediction phase. The ``loss`` and ``model`` nodes are not useful during prediction. In any case, much of the graph definition code is shared by the training and prediction phases. As a result you need to find a way to isolate this code in a reusable file. It is also possible that the prediction phase is coded using a different programming language. For example, if the end user web site is created using Java you will need to re-write the graph creation code using Java.
 
 ## Training Data
 This repo contains AirBnb data for Boston in ``listings.csv``. To update this data or
