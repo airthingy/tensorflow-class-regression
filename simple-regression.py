@@ -8,8 +8,8 @@ b = tf.Variable([0.0])
 X = tf.placeholder(tf.float32)
 Y = tf.placeholder(tf.float32)
 
-labels = W * X + b
-loss = tf.reduce_mean(tf.square(labels - Y))
+predictions = W * X + b
+loss = tf.reduce_mean(tf.square(predictions - Y))
 train = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
 
 # Sample imput data. y = 3.x + 4
@@ -33,5 +33,8 @@ with tf.Session() as sess:
             if error_rate < 0.0001:
                 break
 
-    x_unseen = [6.0, 7.0, 8.0]
-    print("Predections:", sess.run(labels, {X:x_unseen}))
+    # Validate the model with data not used in training
+    x_unseen = np.array([6.0, 7.0, 8.0])
+    y_expected = x_unseen * 3.0 + 4.0
+    print("Predections:", sess.run(predictions, {X:x_unseen}))
+    print("Expected:", y_expected)
