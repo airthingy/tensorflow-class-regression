@@ -24,7 +24,7 @@ It is highly recommended that you use a modern editor like Visual Studio Code, S
 Install Python development plugins for these editors.
 
 ## How to do the Workshop?
-As you can already see completed solution code is already given to you in this repo. Use them only as a guide in case your own work is not working for some reason. You can also copy paste lengthy tedius code that serves no educational purpose.
+As you can already see completed solution code is already given to you in this repo. Use them only as a guide in case your own code is not working for some reason. You can also copy paste lengthy tedius code that serves no educational purpose.
 
 Create a folder called **workshop** and do all your work there.
 
@@ -36,7 +36,7 @@ In this workshop we will learn these basic concepts of Tensorflow:
 
 - **Placeholder** - This is where you supply values as input to a computation. For example when training a model you supply training data from files into placeholders.
 - **Variable** - Tensorflow computes data and saves them in variables. For example if a model predicts the chance of rain that will be saved in a variable. Think of variables as computed outputs.
-- **Computation graph** - All algebric operations are declared in a graph like data structure made up of operands and operators. Once a graph is created it can be executed anytime and any number of times. This is different from the way conventional programming languages like Java and C++ does computation. There are tremendous benefits to graph based computation:
+- **Computation graph** - All algebric operations are declared in a graph like data structure made up of operands and operators. Once a graph is created it can be executed anytime and any number of times. This is different from the way conventional programming languages like Java and C++ perform computation. There are tremendous benefits to graph based computation:
     - Some operations like matrix multiplication can be distributed to GPUs for massively parallel computation. You as a developer don't have to know anything about parallel computing or GPU programming.
     - Operations can be federated, meaning, they can be distributed across multiple machines over the network.
 - **Matrix operations** - Linear algebra is at the heart of machine learning. Before we get into full scale ML problems we will learn how Tensorflow does basic matrix operations.
@@ -92,22 +92,23 @@ Congratulations! You have successfully solved your first problem in Tensorflow. 
 > **Did you know?** All participants in a graph, like placeholders, variables, and the graph itself is a ``tf.Tensor``. The result of running a graph may or may not be a tensor. In our example above the result is a simple ``float32``. 
 
 ## Variable
-Variables are where results of computation can be saved. Let's model this very simple operation that increments a variable.
+Variables are where results of computation can be saved. Let's model this operation that increments a variable.
 
 ```python
 i = i + 1
 ```
 
-If you may recall from your CompSci 101 days this is actually a combination of two operations:
+You may recall from your CompSci 101 days that this is actually a combination of two operations:
 
-- Add 1 to ``i``.
-- Save the result of the addition to the memory location pointed to by ``i``. We simply assign the result to the variable ``i``.
+- Add 1 to ``i`` and save the result in a temporary variable (created behind the scene by the compiler).
+- Assign the result to the variable ``i``.
 
 Let's create a graph that models this problem. At the bottom of ``basic.py`` add these lines.
 
 ```python
 i = tf.Variable(0.0)
 result = tf.add(i, 1)
+
 graph = tf.assign(i, result)
 ```
 
@@ -126,7 +127,7 @@ with tf.Session() as sess:
 
 A few things to note here.
 
-- Even though we specified ``0.0`` as the initial value of ``i``, we still had to execute ``tf.global_variables_initializer()`` to initialize the variables. It is at this point ``0.0`` gets assigned to ``i``.
+- Even though we declared ``0.0`` as the initial value of ``i``, we still had to execute ``tf.global_variables_initializer()`` to initialize the variables. It is at this point ``0.0`` gets assigned to ``i``.
 - To read the value of a variable you need to execute the variable as a graph. We are doing that here using ``sess.run(i)``.
 
 Save and run the file. You should see this.
@@ -139,7 +140,7 @@ Step: 3 i: 4.0
 Step: 4 i: 5.0
 ```
 
->**Advanced:** You can think of variables as where we can store state in a lengthy series of operations. During training weights and biases are constantly updated for the most optimal outcome. As you can imagine weights and biases are always defined as variables in Tensorflow. These variables are computed only during the training phase. Their final values are saved in files at the end of training. During prediction phase their values are restored from files and initialized. This is why training takes so long - hours to weeks depending on the complexity of the model. Prediction can be done in the blink of an eye.
+>**Advanced:** You can think of variables as where we can store state in a lengthy series of operations. During training weights and biases are constantly updated for the most optimal outcome. As you can imagine weights and biases are always defined as variables in Tensorflow. These variables are computed only during the training phase. Their final values are saved in files at the end of training. During prediction phase their values are restored from files and assigned to the variables. This is why training takes so long - hours to weeks depending on the complexity of the model. Prediction can be done in the blink of an eye.
 >
 >Some advanced neural networks like RNN and LSTM need to maintain state even during the prediction phase. For example a model that translates language the meaning of a sentence can depend on the meaning of previous few sentences.
 
@@ -155,7 +156,7 @@ Y = tf.placeholder(tf.float32, [2, 4])
 graph = tf.matmul(X, Y)
 ```
 
-Note, this time we specified the dimensions (also frequently called shape) of the input data.
+Note, this time we specified the dimensions (also called shape) of the input data.
 
 Enter the input data.
 
@@ -191,6 +192,8 @@ Save and run the file. Make sure you see this result.
 ```
 
 >**Numpy Array:** Here we are feeding plain Python lists to the placeholders. Tensorflow also allows feeding numpy arrays. In real life you will mostly work with numpy arrays.
+
+Note: To do elementwise multiplication of two matrices of same dimension you use ``tf.multiply(X, Y)`` or just the ``X * Y`` syntax.
 
 ### Unknown Dimensions
 In the code above we have precisely stated the matrix dimensions as 4x2 and 2x4. In real life there will be some dimensions that you will not know when writing the code. For example, you may not know how many sample data are available in the training dataset. Tensorflow is very flexible in this regard. You can use ``None`` as the dimension in those cases. At execution time Tensorflow will make sure that the actual dimensions of the data fed to the model are valid for the requested matrix operation.
