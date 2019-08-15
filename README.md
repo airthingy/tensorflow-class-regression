@@ -213,9 +213,9 @@ Now at execution time the missing dimensions will be filled in based on the data
 Save and run the file. You should see the same result.
 
 # Workshop - Simple Linear Regression
-In linear regression system learns weights and bias from training data such that it can fit a line through the data most accurately (with least amount of error). Using this technique you can solve problems like housing price prediction.
+In linear regression a system learns weights and bias from training data such that it can fit a line through the data most accurately. Using this technique you can solve problems like housing price prediction.
 
-During training error (also called loss) is gradually minimized using a technique called Gradient Descent.
+During training error (or loss) is gradually minimized using a technique called Gradient Descent.
 
 Linear regression may be one of the simplest ML techniques but it forms the foundation for other learning algorithms. This is why we need to spend a bit of time fully understanding how this works.
 
@@ -227,11 +227,14 @@ y = 3x + 4
 
 At the end of training the model should discover that the weight is 3.0 and bias is 4.0.
 
+In this example prediction (or label) ``y`` depends on a single feature ``x``. For example, price of a house depends on the square footage. In real life prediction may depend on dozens of features.
+
 We keep the problem purposely simple. The focus of this workshop is:
 
 - How to run training that discovers the weights and biases for least error.
 - How to run prediction
 - How to save and restore weights and biases
+- Accurately understand the dimensions of each matrix used in the model
 
 ## Define the Model
 Create a file called ``simple-regression.py``.
@@ -243,7 +246,7 @@ import tensorflow.compat.v1 as tf
 import numpy as np
 ```
 
-Weight is a ``nx1`` vector where ``n`` is the number of features in a problem. We have a single feature only. Let's declare it as a ``1x1`` matrix.
+Weight is a ``nx1`` vector where ``n`` is the number of features in a problem. That is, a weight exists for every feature. We have a single feature only. Let's declare it as a ``1x1`` matrix.
 
 ```python
 # Weight as 1x1 matrix initialized to 0
@@ -256,7 +259,7 @@ Bias is just a single (scalar) variable in linear regression.
 b = tf.Variable(0.0)
 ```
 
-Next, declare the input placeholders. ``X`` has dimension of ``mxn`` where ``m`` is the number of training samples (not known when writing code) and ``n`` is the number of features. Prediction ``Y`` is always ``mx1`` in linear regression (one prediction for each sample data).
+Next, declare the input placeholders. Feature matrix ``X`` has dimension of ``mxn`` where ``m`` is the number of training samples (not known when writing code) and ``n`` is the number of features. Prediction ``Y`` is always ``mx1`` in linear regression (one predicted value for each sample data).
 
 ```python
 X = tf.placeholder(tf.float32, [None, 1])
@@ -271,7 +274,7 @@ loss = tf.reduce_mean(tf.square(predictions - Y))
 model = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
 ```
 
->**Check:** Audit the dimensions of ``X`` and ``W``. Can they be legally multiplied? What will be the dimension of ``predictions``?
+>**Crosscheck:** Audit the dimensions of ``X`` and ``W``. Can they be legally multiplied? What will be the dimension of ``predictions``?
 
 ## Generate Training Data
 Normally training data is loaded from disk. But in our simple example we can just generate it. Add these lines.
@@ -311,6 +314,8 @@ with tf.Session() as sess:
     print("Predections:", sess.run(predictions, {X:x_unseen}))
     print("Expected:", y_expected)
 ```
+
+Everytime we run the model the weights and bias are slighltly updated. Generally, with every update the accuracy goes up and error starts to drop.
 
 ## Run Code
 Save your file and run it like this.
@@ -367,7 +372,7 @@ with tf.Session() as sess:
     print("Expected:", y_expected)
 ```
 
-Save file and run it. The result will be the same as before.
+Save file and run it. The result will be the same as before. Verify that you have several ``model.ckpt.*`` files in the current folder.
 
 >**Tip:** The ``predictions`` node of the graph is used during the prediction phase. The ``loss`` and ``model`` nodes are not useful during prediction. In any case, much of the graph definition code is shared by the training and prediction phases. As a result you need to find a way to isolate this code in a reusable file. It is also possible that the prediction phase is coded using a different programming language. For example, if the end user web site is created using Java you will need to re-write the graph creation code using Java.
 
