@@ -19,7 +19,7 @@ def predict():
         result = pair[0]
         predicted_price = result["predictions"][0]
         actual_price = pair[1][0]
-
-        print("Predicted:", predicted_price, "Actual:", actual_price)
+        #Get price from log values
+        print("Predicted:", np.exp(predicted_price), "Actual:", np.exp(actual_price))
 
 predict()

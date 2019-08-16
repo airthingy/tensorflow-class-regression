@@ -679,18 +679,23 @@ def predict():
         batch_size=32,
         shuffle=False,
         num_epochs=1)
-    results = linear_regressor.predict(input_fn = predict_input_fn)
+    results = linear_regressor.predict(
+        input_fn=predict_input_fn)
         
     for pair in zip(results, test_prices.values):
         result = pair[0]
         predicted_price = result["predictions"][0]
         actual_price = pair[1][0]
 
-        print("Predicted:", predicted_price, "Actual:", actual_price)
+        #Get price from log values
+        print("Predicted:", np.exp(predicted_price), 
+          "Actual:", np.exp(actual_price))
 
 predict()
 ```
 
+> Note that we don't need to supply the label data (``y``) when doing prediction. In fact label is the output of the prediction process.
+
 The ``predict()`` method returns a generator which can be iyerated using ``for``. For each set of features there is one prediction. Every prediction is represented by a dictionary where the actual predicted value is saved using the key ``predictions``.
 
-Save and run the file.
+Save and run the file. Compare the predicted price and actual price.
