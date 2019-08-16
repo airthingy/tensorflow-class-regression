@@ -527,6 +527,7 @@ Create a file called ``train.py``. Add these imports.
 ```python
 import pandas as pd
 import tensorflow.compat.v1 as tf
+import logging
 import model
 ```
 
@@ -534,13 +535,13 @@ Add the following function.
 
 ```python
 def train_model():
-    # Code goes here
+    # Show training progress
+    logging.getLogger().setLevel(logging.INFO)
 ```
 
-Create the model.
+Add this line to the function to create the model graph.
 
 ```python
-def train_model():
     linear_regressor = model.build_model()
 ```
 
@@ -559,21 +560,21 @@ During training an estimator needs an input function. Job of this input function
     training_input_fn = tf.estimator.inputs.pandas_input_fn(
         x=train_features,
         y=train_prices["price"],
-        batch_size=32,
+        batch_size=128,
         shuffle=True,
-        num_epochs=100)
+        num_epochs=1000)
 ```
 
 Notice how we extracted the price ``Series`` from the ``train_prices``. 
 
 > **Batch size** signifies how many samples are fed during a training step. After every step weights and biases are corrected.
 >
-> **Number of epoch** signifies how many times the entire dataset is repeated. For each epoch batches of data are fed until the entire dataset is exhausted. Then the process starts again and repeated for the number of epochs.
+> **Number of epoch** signifies how many times the entire dataset is fed. For each epoch batches of data are fed until the entire dataset is exhausted. Then the process starts again and repeated for the number of epochs.
 
 Next ask the estimator to start training.
 
 ```python
-    linear_regressor.train(input_fn = training_input_fn,steps=2000)
+    linear_regressor.train(input_fn = training_input_fn)
 ```
 
 We are done with training code. Call the function from the bottom of the file.
@@ -589,6 +590,8 @@ python3 train.py
 ```
 
 It will take a few moments but finally finish.
+
+>Estimators save the parameters in checkpoint files. If you re-run ``train.py`` it will start from where we left off at the end of the last training session. This lets you repeatedly run training if you need to. The down side is that if you change the model for some reason you need to delete the model folder where parameters are saved.
 
 ## Observe Loss Using Tensorboard
 Start Tensorboard by pointing to the folder where logging is done.
@@ -646,10 +649,12 @@ python3 evaluate.py
 You will see something similar to this.
 
 ```
-{'average_loss': 0.15383671, 'label/mean': 5.011344, 
-'loss': 4.8458567, 'prediction/mean': 5.0486903, 
-'global_step': 2000}
+{'average_loss': 0.11145464, 'label/mean': 5.011344, 
+'loss': 3.510821, 'prediction/mean': 5.0427747, 
+'global_step': 33469}
 ```
+
+Currently estimators use root mean square error function. Which means actual average loss will be roughly square root of ``average_loss``. This makes actual inaccuracy larger than what ``average_loss`` shows here.
 
 Log of prices are typically in the range of 4 to 6. You can actually see that in the mean price shown by ``label/mean``. For that an average loss of 0.15 is not terribly good. But strangely the mean value of the predicted prices is very close to mean value of the actual prices.
 
