@@ -15,10 +15,11 @@ def predict():
                                                             num_epochs=1)
     results = linear_regressor.predict(input_fn = predict_input_fn)
     
-    # Collect predictions in a list
-    predictions = [r["predictions"][0] for r in results]
+    for pair in zip(results, test_prices.values):
+        result = pair[0]
+        predicted_price = result["predictions"][0]
+        actual_price = pair[1][0]
 
-    for price in zip(predictions, test_prices.values):
-        print("Predicted:", price[0], "Actual:", price[1][0])
+        print("Predicted:", predicted_price, "Actual:", actual_price)
 
 predict()

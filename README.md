@@ -646,7 +646,9 @@ python3 evaluate.py
 You will see something similar to this.
 
 ```
-{'average_loss': 0.15383671, 'label/mean': 5.011344, 'loss': 4.8458567, 'prediction/mean': 5.0486903, 'global_step': 2000}
+{'average_loss': 0.15383671, 'label/mean': 5.011344, 
+'loss': 4.8458567, 'prediction/mean': 5.0486903, 
+'global_step': 2000}
 ```
 
 Log of prices are typically in the range of 4 to 6. You can actually see that in the mean price shown by ``label/mean``. For that an average loss of 0.15 is not terribly good. But strangely the mean value of the predicted prices is very close to mean value of the actual prices.
@@ -674,11 +676,12 @@ def predict():
         num_epochs=1)
     results = linear_regressor.predict(input_fn = predict_input_fn)
         
-    # Collect predictions in a list
-    predictions = [r["predictions"][0] for r in results]
+    for pair in zip(results, test_prices.values):
+        result = pair[0]
+        predicted_price = result["predictions"][0]
+        actual_price = pair[1][0]
 
-    for price in zip(predictions, test_prices.values):
-        print("Predicted:", price[0], "Actual:", price[1][0])
+        print("Predicted:", predicted_price, "Actual:", actual_price)
 
 predict()
 ```
