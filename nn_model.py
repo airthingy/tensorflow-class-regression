@@ -36,7 +36,7 @@ def build_model():
     all_columns = numeric_columns + categorical_columns
 
     nn_regressor = tf.estimator.DNNRegressor(
-        hidden_units=[15, 5, 2],
+        hidden_units=[25, 15, 7],
         feature_columns=all_columns, 
         model_dir="nn_regressor")
 
