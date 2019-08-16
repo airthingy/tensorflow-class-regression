@@ -44,6 +44,11 @@ test_price = test["price"]
 train_features = train.drop("price", axis=1)
 test_features = test.drop("price", axis=1)
 
+# Spread out price by taking a log. Otherwise prices are very close to each other
+# which makes prediction less accurate
+train_price = np.log(train_price)
+test_price = np.log(test_price)
+
 # Save split data in files
 train_price.to_csv("train_price.csv", header=True, index=False)
 test_price.to_csv("test_price.csv", header=True, index=False)

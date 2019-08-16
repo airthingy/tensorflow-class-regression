@@ -26,7 +26,7 @@ Install Python development plugins for these editors.
 ## How to do the Workshop?
 As you can already see completed solution code is already given to you in this repo. Use them only as a guide in case your own code is not working for some reason. You can also copy paste lengthy tedius code that serves no educational purpose.
 
-Create a folder called **workshop** and do all your work there.
+Create a folder called **workshop/regression** anywhere suitable. Do all your work there.
 
 > **Tip:** Make sure you understand every line of code that goes into your work. Blindy copying and pasting code from the completed solution won't help you in any way.
 
@@ -374,8 +374,315 @@ with tf.Session() as sess:
 
 Save file and run it. The result will be the same as before. Verify that you have several ``model.ckpt.*`` files in the current folder.
 
->**Tip:** The ``predictions`` node of the graph is used during the prediction phase. The ``loss`` and ``model`` nodes are not useful during prediction. In any case, much of the graph definition code is shared by the training and prediction phases. As a result you need to find a way to isolate this code in a reusable file. It is also possible that the prediction phase is coded using a different programming language. For example, if the end user web site is created using Java you will need to re-write the graph creation code using Java.
+>**Tip:** During prediction we only need to use the ``predictions`` node of the graph. The ``loss`` and ``model`` nodes are not useful during prediction. In any case, much of the graph definition code is shared by the training and prediction phases. As a result you need to find a way to isolate this code in a reusable file. It is also possible that the prediction phase is coded using a different programming language. For example, if the end user web site is created using Java you will need to re-write the graph creation code using Java.
 
-## Training Data
-This repo contains AirBnb data for Boston in ``listings.csv``. To update this data or
-work with another city go to: http://insideairbnb.com/get-the-data.html.
+# Workshop - AirBnB Property Price Prediction
+We will now use linear regression to solve a real life problem using real life data. We have the AirBnB property rental price data for the Boston, MA area. There are dozens of features that prices depend on. We will train a model to learn from the data and start to do fairly accurate prediction of prices.
+
+We will follow several real life project best practices:
+
+- **Prepare data** - Clean up missing data. Format data suitable for training.
+- **Categorical features** - Not all features are numerical. We have categorical features. For example property type values can be "House", "Apartment", "Boat" etc. We need to learn how to deal with these.
+- **Train/test split** - Separate data into two parts. 80% will be used for training. The remaining 20% of unseen data will be used for validation.
+- **Distinct phases** - We will have separate code for train, test and prediction. They will share model creation code.
+
+## Preparing Data
+This repo contains AirBnb data for Boston in ``listings.csv``. This was downloaded from: http://insideairbnb.com/get-the-data.html.
+
+Although there are many features in this file we decided to only use these features. Open the file in Excel and briefly check each feature.
+
+- **property_type** - Categorical 
+- **room_type** - Categorical 
+- **bathrooms** - Numerical but sometimes missing
+- **bedrooms** - Numerical but sometimes missing
+- **beds** - Numerical but sometimes missing
+- **bed_type** - Categorical
+- **accommodates** - Numerical
+- **host_total_listings_count** - Numerical
+- **number_of_reviews** - Numerical
+- **review_scores_value** - Numerical but sometimes missing
+- **neighbourhood_cleansed** - Categorical. Example: "Jamaica Plain" and "West Roxbury".
+- **cleaning_fee** - Given as a string like $12.34. Need conversion to numeric 
+- **minimum_nights** - Numerical
+- **security_deposit** - Given as a string like $12.34. Need conversion to numeric 
+- **host_is_superhost** - Categorical. t for true and f for false
+- **instant_bookable** - Categorical. t for true and f for false
+- **price** - This is the label column. Given as a string like $12.34. Need conversion to numeric
+
+The amount of pre-processing we have to do is extensive. This is something we should do as a separate phase and before training can even begin. To save time the data processing code is given to you in ``airbnb-prepare-data.py``. Instructor should walk through every line of code and explain.
+
+>**Vocabulary:** Vocabulary for a categorical feature is the complete list of possible values. For example, for ``instant_bookable`` the vocabulary is ``["t", "f"]``. Tensorflow provides many ways of dealing with categorical features. Vocabulary based approach is one of the easiest to understand and work with.
+>
+>Here we extract the vocabulary for every categorical feature and save them in a Pickl file. During training will load the vocabulary from there.
+>
+>If the vocabulary changes you will need to retrain the model.
+
+Run the code to prepare data.
+
+```
+python3 airbnb-prepare-data.py
+```
+
+This will output the following files.
+
+- train_price.csv - Log value of prices used for training
+- train_features.csv - Features used for training
+- test_price.csv - Log value of prices used for testing
+- test_features.csv - Features used for testing
+
+Copy these files to your **workshop/regression** folder.
+
+## Create the Model
+In the previous workshop we implemented linear regression using low level Tensorflow API. Tensorflow has recently added the estimator API that is not only super easy to use (easier than even Keras) it also supports many very powerful features:
+
+- Makes it easy to work with categorical features
+- Supports fully distributed training involving multiple machines
+- Parameters are saved in checkpoint files during training. They are automatically loaded during testing and prediction
+- You can observe training progress and do other debugging using Tensorboard
+
+All of these make estimators compelling alternative to low level Tensorflow API and Keras. Not only for proof of concept but also for production use.
+
+In this workshop we will use the pre-built estimator called ``tf.estimator.LinearRegressor``.
+
+In your **workshop/regression** folder create a file called ``model.py``. Import these names.
+
+```python
+import tensorflow.compat.v1 as tf
+import pickle
+```
+
+Define a function called ``build_model()``.
+
+```python
+def build_model():
+    #Code goes here
+```
+
+Eastimators expect each feature to be represented by a feature column. A feature column can be numeric like average review score. Or it can be categorical. Numeric columns are always easy to work with. Let's go ahead and create these columns. Add these lines to the function.
+
+```python
+def build_model():
+    # Define the numeric feature columns
+    numeric_features = [
+        'host_total_listings_count', 'accommodates', 'bathrooms', 'bedrooms',
+        'beds', 'security_deposit', 'cleaning_fee', 'minimum_nights',
+        'number_of_reviews', 'review_scores_value'
+    ]
+
+    numeric_columns = [
+        tf.feature_column.numeric_column(key=feature)
+        for feature in numeric_features
+    ]
+
+```
+
+Next create the category columns using the vocabulary based approach.
+
+```python
+    # Define the category feature columns
+    categorical_features = [
+        'host_is_superhost', 'neighbourhood_cleansed', 'property_type',
+        'room_type', 'bed_type', 'instant_bookable'
+    ]
+
+    # Load vocabulary of category features
+    with open("vocabulary.pkl", "rb") as f:
+        vocabulary = pickle.load(f)
+
+    categorical_columns = [
+        tf.feature_column.categorical_column_with_vocabulary_list(
+            key=feature, vocabulary_list=vocabulary[feature])
+        for feature in categorical_features
+    ]
+
+```
+
+Collect all columns in a single list.
+
+```python
+    all_columns = numeric_columns + categorical_columns
+```
+
+Finally create the estimator and return it from the function.
+
+```python
+    linear_regressor = tf.estimator.LinearRegressor(
+        feature_columns=all_columns, model_dir="linear_regressor")
+
+    return linear_regressor
+```
+
+Here ``model_dir`` points to the folder where:
+
+- Parameters will be saved in checkpoint files.
+- Tensorboard logging will take place
+
+> Pandas and feature columns work very well together. Each feature column has a unique key name. This should match the column names in pandas DataFrame. During training we can feed an entire DataFrame to the estimator. We shall see this in action next.
+
+Save your file before moving forward.
+
+## Do Training
+Create a file called ``train.py``. Add these imports.
+
+```python
+import pandas as pd
+import tensorflow.compat.v1 as tf
+import model
+```
+
+Add the following function.
+
+```python
+def train_model():
+    # Code goes here
+```
+
+Create the model.
+
+```python
+def train_model():
+    linear_regressor = model.build_model()
+```
+
+Load training data using pandas.
+
+```python
+    train_features = pd.read_csv("train_features.csv")
+    train_prices = pd.read_csv("train_price.csv")
+```
+
+Both of these will be ``DataFrame`` objects.
+
+During training an estimator needs an input function. Job of this input function is to feed the feature and label placeholders with data in batches. You can write your own function. But fortunately for us Tensorflow has a built in function that can feed the model with pandas data. Since features are multi-column we can feed an entire ``DataFrame``. The labels are a single column. This must be a pandas ``Series``. Add this code to define the function.
+
+```python
+    training_input_fn = tf.estimator.inputs.pandas_input_fn(
+        x=train_features,
+        y=train_prices["price"],
+        batch_size=32,
+        shuffle=True,
+        num_epochs=100)
+```
+
+Notice how we extracted the price ``Series`` from the ``train_prices``. 
+
+> **Batch size** signifies how many samples are fed during a training step. After every step weights and biases are corrected.
+>
+> **Number of epoch** signifies how many times the entire dataset is repeated. For each epoch batches of data are fed until the entire dataset is exhausted. Then the process starts again and repeated for the number of epochs.
+
+Next ask the estimator to start training.
+
+```python
+    linear_regressor.train(input_fn = training_input_fn,steps=2000)
+```
+
+We are done with training code. Call the function from the bottom of the file.
+
+```python
+train_model()
+```
+
+Save your file. Then run it.
+
+```
+python3 train.py
+```
+
+It will take a few moments but finally finish.
+
+## Observe Loss Using Tensorboard
+Start Tensorboard by pointing to the folder where logging is done.
+
+```
+tensorboard --logdir=linear_regressor
+```
+
+Open a browser and enter ``http://localhost:6006``.
+
+![Loss](media/loss_plot.png)
+
+Check the average_loss plot. It shows loss has gone down steadily and nicely. This is a classic shape for a good quality training.
+
+End tensorboard by hittong **Control+C**.
+
+## Validate the Model
+We will now run predictions on data withheld from training. We know the correct prices for these samples. We can easily compare the predicted prices with the actual prices and compute accuracy.
+
+Create a file called ``evaluate.py``. Add the following code.
+
+```python
+import pandas as pd
+import tensorflow.compat.v1 as tf
+import model
+
+def evaluate_model():
+    linear_regressor = model.build_model()
+    test_features = pd.read_csv("test_features.csv")
+    test_prices = pd.read_csv("test_price.csv")
+
+    eval_input_fn = tf.estimator.inputs.pandas_input_fn(
+        x=test_features,
+        y=test_prices["price"],
+        batch_size=32,
+        shuffle=False,
+        num_epochs=1)
+    result = linear_regressor.evaluate(input_fn = eval_input_fn)
+    print(result)
+
+evaluate_model()
+```
+
+This is very similar to the training code. Two key differences:
+
+- We set the number of epochs to 1. There is no sense in repeating validation more than once.
+- We call the ``evaluate()`` method of the estimator. This returns a result as a dictionary.
+
+Save the file and run it.
+
+```
+python3 evaluate.py
+```
+
+You will see something similar to this.
+
+```
+{'average_loss': 0.15383671, 'label/mean': 5.011344, 'loss': 4.8458567, 'prediction/mean': 5.0486903, 'global_step': 2000}
+```
+
+Log of prices are typically in the range of 4 to 6. You can actually see that in the mean price shown by ``label/mean``. For that an average loss of 0.15 is not terribly good. But strangely the mean value of the predicted prices is very close to mean value of the actual prices.
+
+## Run Predictions
+We will now learn how to predict prices given a set of input features. We will use the test features for this. In real life this code will be built in a web site or a microservice.
+
+Create a file called ``predict.py``. Add this code.
+
+```python
+import tensorflow.compat.v1 as tf
+import numpy as np
+import model
+
+def predict():
+    linear_regressor = model.build_model()
+    test_features = pd.read_csv("test_features.csv")
+    test_prices = pd.read_csv("test_price.csv")
+
+    predict_input_fn = tf.estimator.inputs.pandas_input_fn(
+        x=test_features,
+        y=None,
+        batch_size=32,
+        shuffle=False,
+        num_epochs=1)
+    results = linear_regressor.predict(input_fn = predict_input_fn)
+        
+    # Collect predictions in a list
+    predictions = [r["predictions"][0] for r in results]
+
+    for price in zip(predictions, test_prices.values):
+        print("Predicted:", price[0], "Actual:", price[1][0])
+
+predict()
+```
+
+The ``predict()`` method returns a generator which can be iyerated using ``for``. For each set of features there is one prediction. Every prediction is represented by a dictionary where the actual predicted value is saved using the key ``predictions``.
+
+Save and run the file.
