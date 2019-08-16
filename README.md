@@ -565,7 +565,7 @@ During training an estimator needs an input function. Job of this input function
         num_epochs=1000)
 ```
 
-Notice how we extracted the price ``Series`` from the ``train_prices``. 
+Notice how we extracted the price ``Series`` from the ``train_prices``. Also random shuffling is highly recommended during training.
 
 > **Batch size** signifies how many samples are fed during a training step. After every step weights and biases are corrected.
 >
@@ -635,10 +635,11 @@ def evaluate_model():
 evaluate_model()
 ```
 
-This is very similar to the training code. Two key differences:
+This is very similar to the training code. Key differences:
 
 - We set the number of epochs to 1. There is no sense in repeating validation more than once.
 - We call the ``evaluate()`` method of the estimator. This returns a result as a dictionary.
+- There is no value in random shuffling data during evaluation.
 
 Save the file and run it.
 
@@ -699,3 +700,192 @@ predict()
 The ``predict()`` method returns a generator which can be iyerated using ``for``. For each set of features there is one prediction. Every prediction is represented by a dictionary where the actual predicted value is saved using the key ``predictions``.
 
 Save and run the file. Compare the predicted price and actual price.
+
+# Workshop - Regression Using Neural Network
+Our linear regression model achieved reasonable accuracy on the AirBnB price prediction problem. Unfortunately, linear regression can not deal with non-linearity. For example, if price starts to go up non-linearly with square footage then the model will start to have more inaccuracies at the higher end of floor area. A neural network doesn't have this problem. It can learn non-linear effect of a feature. Also, neural network gives us more control over how many layers we want and the number of neurons per layer. We can use vary this architecture to steadily increase accuracy.
+
+We will now solve the same AirBnB problem using a neural network. The model wll have this layer architecture.
+
+- Input layer will have 16 neurons one for each of the 16 features of a property.
+- Hidden layer 1 will have 25 neurons. This is a reasonable start for 16 input features. It can be more.
+- Hidden layer 2 will have 15 neurons.
+- Hidden layer 3 will have 7 neurons.
+- Final readout or output layer has only one neuron in a regression problem. That is because we output a single real number (price in this case).
+
+## Create the Model
+Create a file in **workshop/regression** folder called ``nn_model.py``. Code for this will be very similar to what we did in ``model.py``. A key distinction is that the neural network based regression estimator ``tf.estimator.DNNRegressor`` can not directly work with a vocabulary based categorial feature column. It has to be wrapped in an embedding column.
+
+Add this code to ``nn_model.py``.
+
+```python
+import tensorflow.compat.v1 as tf
+import pickle
+
+def build_model():
+    # Define the numeric feature columns
+    numeric_features = [
+        'host_total_listings_count', 'accommodates', 
+        'bathrooms', 'bedrooms',
+        'beds', 'security_deposit', 
+        'cleaning_fee', 'minimum_nights',
+        'number_of_reviews', 'review_scores_value'
+    ]
+
+    numeric_columns = [
+        tf.feature_column.numeric_column(key=feature)
+        for feature in numeric_features
+    ]
+
+    # Define the category feature columns
+    categorical_features = [
+        'host_is_superhost', 
+        'neighbourhood_cleansed', 
+        'property_type',
+        'room_type', 'bed_type', 
+        'instant_bookable'
+    ]
+
+    # Load vocabulary of category features
+    with open("vocabulary.pkl", "rb") as f:
+        vocabulary = pickle.load(f)
+
+    categorical_columns = [
+        tf.feature_column.embedding_column(
+            tf.feature_column.categorical_column_with_vocabulary_list(
+                key=feature, vocabulary_list=vocabulary[feature]),
+            dimension=5
+        )
+        for feature in categorical_features
+    ]
+
+    all_columns = numeric_columns + categorical_columns
+
+    nn_regressor = tf.estimator.DNNRegressor(
+        hidden_units=[25, 15, 7],
+        feature_columns=all_columns, 
+        model_dir="nn_regressor")
+
+    return nn_regressor
+```
+
+Save your work.
+
+Observe:
+
+- How we are wrapping a vocabulary based feature column in an embedded column.
+- How we are supplying the network architecture to ``DNNRegressor`` using the ``hidden_units`` parameter.
+- Parameters will be saved in ``nn_regressor/`` folder.
+
+## Do Training
+Create a file called ``nn_train.py``. The code here is virtually identical to ``train.py``. Except we use the neural network model.
+
+```python
+import pandas as pd
+import tensorflow.compat.v1 as tf
+import logging
+import nn_model
+
+def train_model():
+    # Show training progress
+    logging.getLogger().setLevel(logging.INFO)
+
+    nn_regressor = nn_model.build_model()
+    train_features = pd.read_csv("train_features.csv")
+    train_prices = pd.read_csv("train_price.csv")
+
+    training_input_fn = tf.estimator.inputs.pandas_input_fn(
+        x=train_features,
+        y=train_prices["price"],
+        batch_size=128,
+        shuffle=True,
+        num_epochs=1000)
+    nn_regressor.train(input_fn = training_input_fn)
+
+train_model()
+```
+
+Save changes. Then start training.
+
+```
+python3 nn_train.py
+```
+
+At the end of training veiry that the ``nn_regressor/`` folder was created.
+
+## Evaluate the Model
+Create a file called ``nn_evaluate.py``. Add this code.
+
+```python
+import pandas as pd
+import tensorflow.compat.v1 as tf
+import nn_model
+
+def evaluate_model():
+    nn_regressor = nn_model.build_model()
+    test_features = pd.read_csv("test_features.csv")
+    test_prices = pd.read_csv("test_price.csv")
+
+    eval_input_fn = tf.estimator.inputs.pandas_input_fn(
+        x=test_features,
+        y=test_prices["price"],
+        batch_size=32,
+        shuffle=False,
+        num_epochs=1)
+    result = nn_regressor.evaluate(input_fn = eval_input_fn)
+    print(result)
+
+evaluate_model()
+```
+
+Save the file and then run it.
+
+```
+python3 nn_evaluate.py
+```
+
+You should see slightly better accuracy than linear regression.
+
+```javascript
+{'average_loss': 0.09843576, 
+'label/mean': 5.011344, 
+'loss': 3.1007264, 
+'prediction/mean': 5.0131545, 
+'global_step': 33469}
+```
+
+## Run Prediction
+The code is again identical to linear regression. Create a file called ``nn_predict.py``. Add this code.
+
+```python
+import pandas as pd
+import tensorflow.compat.v1 as tf
+import numpy as np
+import nn_model
+
+def predict():
+    nn_regressor = nn_model.build_model()
+    test_features = pd.read_csv("test_features.csv")
+    test_prices = pd.read_csv("test_price.csv")
+
+    predict_input_fn = tf.estimator.inputs.pandas_input_fn(
+        x=test_features,
+        y=None,
+        batch_size=32,
+        shuffle=False,
+        num_epochs=1)
+    results = nn_regressor.predict(input_fn = predict_input_fn)
+    
+    for pair in zip(results, test_prices.values):
+        result = pair[0]
+        predicted_price = result["predictions"][0]
+        actual_price = pair[1][0]
+
+        #Get price from log values
+        print("Predicted:", np.exp(predicted_price), 
+          "Actual:", np.exp(actual_price))
+
+predict()
+```
+
+Save and run the file.
+
