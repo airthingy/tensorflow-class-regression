@@ -398,7 +398,7 @@ Save file and run it. The result will be the same as before. Verify that you hav
 >**Tip:** During prediction we only need to use the ``predictions`` node of the graph. The ``loss`` and ``model`` nodes are not useful during prediction. In any case, much of the graph definition code is shared by the training and prediction phases. As a result you need to find a way to isolate this code in a reusable file. It is also possible that the prediction phase is coded using a different programming language. For example, if the end user web site is created using Java you will need to re-write the graph creation code using Java.
 
 ## Quiz
-Q1. ``X`` should have dimension $m \times n$ where m is number of samples and n is number of features. Why is declared here as follows?
+Q1. ``X`` should have dimension $`m \times n`$ where m is number of samples and n is number of features. Why is declared here as follows?
 
 ```python
 X = tf.placeholder(tf.float32, [None, 1])
