@@ -212,6 +212,27 @@ Now at execution time the missing dimensions will be filled in based on the data
 
 Save and run the file. You should see the same result.
 
+## Quiz
+Q1. We supply input data to a graph using placeholders.
+- True
+- False
+
+Q2. Data computed by a model is saved in a variable.
+- True
+- False
+
+Q3. Will this matrix operation be allowed?
+
+```python
+A = tf.Variable(tf.zeros([3, 4]))
+B = tf.placeholder(tf.float32, [5, 3])
+
+graph = tf.matmul(A, B)
+```
+
+- Yes
+- No
+
 # Workshop - Simple Linear Regression
 In linear regression a system learns weights and bias from training data such that it can fit a line through the data most accurately. Using this technique you can solve problems like housing price prediction.
 
@@ -375,6 +396,13 @@ with tf.Session() as sess:
 Save file and run it. The result will be the same as before. Verify that you have several ``model.ckpt.*`` files in the current folder.
 
 >**Tip:** During prediction we only need to use the ``predictions`` node of the graph. The ``loss`` and ``model`` nodes are not useful during prediction. In any case, much of the graph definition code is shared by the training and prediction phases. As a result you need to find a way to isolate this code in a reusable file. It is also possible that the prediction phase is coded using a different programming language. For example, if the end user web site is created using Java you will need to re-write the graph creation code using Java.
+
+## Quiz
+Q1. ``X`` should have dimension $m \times n$ where m is number of samples and n is number of features. Why is declared here as follows?
+
+```python
+X = tf.placeholder(tf.float32, [None, 1])
+```
 
 # Workshop - AirBnB Property Price Prediction
 We will now use linear regression to solve a real life problem using real life data. We have the AirBnB property rental price data for the Boston, MA area. There are dozens of features that prices depend on. We will train a model to learn from the data and start to do fairly accurate prediction of prices.
