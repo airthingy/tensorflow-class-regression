@@ -398,11 +398,18 @@ Save file and run it. The result will be the same as before. Verify that you hav
 >**Tip:** During prediction we only need to use the ``predictions`` node of the graph. The ``loss`` and ``model`` nodes are not useful during prediction. In any case, much of the graph definition code is shared by the training and prediction phases. As a result you need to find a way to isolate this code in a reusable file. It is also possible that the prediction phase is coded using a different programming language. For example, if the end user web site is created using Java you will need to re-write the graph creation code using Java.
 
 ## Quiz
-Q1. ``X`` should have dimension $`m \times n`$ where m is number of samples and n is number of features. Why is declared here as follows?
+Q1. ``X`` should have dimension $`m x n`$ where m is number of samples and n is number of features. Why is declared here as follows?
 
 ```python
 X = tf.placeholder(tf.float32, [None, 1])
 ```
+
+Q2. What parts of the code needs to be deployed in production to perform prediction?
+
+1. The model (graph)
+2. The code that trains the model
+3. The code that runs prediction
+4. Saved weights and biases
 
 # Workshop - AirBnB Property Price Prediction
 We will now use linear regression to solve a real life problem using real life data. We have the AirBnB property rental price data for the Boston, MA area. There are dozens of features that prices depend on. We will train a model to learn from the data and start to do fairly accurate prediction of prices.
@@ -725,9 +732,25 @@ predict()
 
 > Note that we don't need to supply the label data (``y``) when doing prediction. In fact label is the output of the prediction process.
 
-The ``predict()`` method returns a generator which can be iyerated using ``for``. For each set of features there is one prediction. Every prediction is represented by a dictionary where the actual predicted value is saved using the key ``predictions``.
+The ``predict()`` method returns a generator which can be iterated using ``for``. For each set of features there is one prediction. Every prediction is represented by a dictionary where the actual predicted value is saved using the key ``predictions``.
 
 Save and run the file. Compare the predicted price and actual price.
+
+## Quiz
+Q1. When running prediction why do we set ``y=None``?
+
+Q2. Why can't we represent ``neighbourhood_cleansed`` as a numerical column?
+
+Q3. ``tf.estimator.inputs.pandas_input_fn()`` requires ``y`` to be a ``Series``.
+- True
+- False
+
+Q4. If training data is separated in 100 batches and we run 5 epochs then how many times training is run?
+
+1. 100
+2. 200
+3. 500
+4. 5000
 
 # Workshop - Regression Using Neural Network
 Our linear regression model achieved reasonable accuracy on the AirBnB price prediction problem. Unfortunately, linear regression can not deal with non-linearity. For example, if price starts to go up non-linearly with square footage then the model will start to have more inaccuracies at the higher end of floor area. A neural network doesn't have this problem. It can learn non-linear effect of a feature. Also, neural network gives us more control over how many layers we want and the number of neurons per layer. We can use vary this architecture to steadily increase accuracy.
@@ -917,3 +940,16 @@ predict()
 
 Save and run the file.
 
+## Quiz
+Q1. Each categorical column is represented by an embedding column with 5 dimensions. This means, each category feature will be input as how many numerical features?
+
+1. 5
+2. 50
+3. 150
+
+Q2. The numerical input created by embedding have these values:
+
+1. 0 or 1
+2. Any real number
+
+Q3. Why is embedding more efficient than using indicator column?
