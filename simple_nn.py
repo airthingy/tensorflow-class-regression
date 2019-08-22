@@ -20,8 +20,7 @@ def build_model():
     X = tf.placeholder(tf.float32, [None, n])
     Y = tf.placeholder(tf.float32, [None, 1])
 
-    layer = hidden_layer(X, 300)
-    layer = hidden_layer(X, 200)
+    layer = hidden_layer(X, 50)
     layer = hidden_layer(layer, 20)
     Y_hat = readout_layer(layer)
 
@@ -31,15 +30,15 @@ def build_model():
     return model, X, Y, Y_hat, loss
 
 # Sample imput data. y = 3.x^2 + 4
-#1000 samples from 0 to 100
-train_x = np.random.rand(1000, 1) * 100
+#100 samples from 0 to 5
+train_x = np.random.rand(100, 1) * 5
 train_y = np.square(train_x) * 3.0 + 4.0
 
 with tf.Session() as sess:
     model, X, Y, Y_hat, loss = build_model()
     sess.run(tf.global_variables_initializer())
 
-    for train_step in range(40001):
+    for train_step in range(50001):
         sess.run(model, {X:train_x, Y:train_y})
 
         # Print training progress

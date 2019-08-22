@@ -752,6 +752,123 @@ Q4. If training data is separated in 100 batches and we run 5 epochs then how ma
 3. 500
 4. 5000
 
+# Workshop - Build a Simple Neural Network 
+In this lab we will build a neural network using low level Tensorflow API. This will give us a very close view of how such a network. But why do we even need a neural network? Linear regression works fine as long as the features have a linear relationship with the label. For example:
+
+```
+y = 3x + 4
+```
+
+But what if the relationship is non-linear. Example:
+
+```
+y = 3x^2 + 4
+```
+
+Neural network can discover such non-linear relationships. So, let's go ahead and solve the above problem. After training the network should learn that weight is 3 and bias is 4. This problem has only one feature.
+
+## Create Utility Functions
+We will create a set of reusable functions that you can use to quickly build a neural network.
+
+Create a file called ``simple_nn.py``.
+
+Add this code.
+
+```python
+import tensorflow.compat.v1 as tf
+import numpy as np
+
+def hidden_layer(input_tensor, num_neurons):
+    num_input_features = input_tensor.get_shape()[1].value
+    W = tf.Variable(tf.truncated_normal([num_input_features, num_neurons], stddev=0.1))
+    b = tf.Variable(tf.zeros([num_neurons]))
+
+    return tf.nn.relu(tf.matmul(input_tensor, W) + b)
+```
+
+Discuss the dimensions of ``W`` and ``b`` here. Does that make sense?
+
+Also note that we are using the ``relu()`` activation function which is quite a good choice in most cases.
+
+Add this function that creates a graph for the final output of the network. For regression problem this will output a single real number.
+
+```python
+def readout_layer(input_tensor):
+    num_input_features = input_tensor.get_shape()[1].value
+    W = tf.Variable(tf.truncated_normal([num_input_features, 1], stddev=0.1))
+    b = tf.Variable(0.0)
+
+    return tf.add(tf.matmul(input_tensor, W), b)
+```
+
+## Build the Model
+Our network will have this architecture.
+
+- Input layer will supply data samples that has only one feature
+- Hidden layer #1 will have 50 neurons
+- Hidden layer #2 will have 20 neurons
+- Output layer will produce a single real number for each input data sample.
+
+Add this function.
+
+```python
+def build_model():
+    n = 1 #Number of features
+    X = tf.placeholder(tf.float32, [None, n])
+    Y = tf.placeholder(tf.float32, [None, 1])
+
+    layer = hidden_layer(X, 50)
+    layer = hidden_layer(layer, 20)
+    Y_hat = readout_layer(layer)
+
+    loss = tf.reduce_mean(tf.square(Y_hat - Y))
+    model = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+
+    return model, X, Y, Y_hat, loss
+```
+
+Note that we are using the same good old gradient descent optimizer algorithm as before. There are better optimizers available these days. But gradient descent will do here.
+
+## Train and Predict
+Add this code.
+
+```python
+# Sample imput data. y = 3.x^2 + 4
+#100 samples from 0 to 5
+train_x = np.random.rand(100, 1) * 5
+train_y = np.square(train_x) * 3.0 + 4.0
+
+with tf.Session() as sess:
+    model, X, Y, Y_hat, loss = build_model()
+    sess.run(tf.global_variables_initializer())
+
+    for train_step in range(50001):
+        sess.run(model, {X:train_x, Y:train_y})
+
+        # Print training progress
+        if train_step % 2000 == 0:
+            error_rate = sess.run(loss, {X:train_x, Y:train_y})
+    
+            print("Step:", train_step, 
+                "Loss:", error_rate)
+            if error_rate < 0.0001:
+                break
+
+    # Validate the model with data not used in training
+    x_unseen = np.array([[6.0], [7.0], [8.0]])
+    y_expected = np.square(x_unseen) * 3.0 + 4.0
+    print("Predections:", sess.run(Y_hat, {X:x_unseen}))
+    print("Expected:", y_expected)
+```
+
+Save and run the file.
+
+```
+python3 simple_nn.py
+```
+
+Our network does a reasonable job.
+
 # Workshop - Regression Using Neural Network
 Our linear regression model achieved reasonable accuracy on the AirBnB price prediction problem. Unfortunately, linear regression can not deal with non-linearity. For example, if price starts to go up non-linearly with square footage then the model will start to have more inaccuracies at the higher end of floor area. A neural network doesn't have this problem. It can learn non-linear effect of a feature. Also, neural network gives us more control over how many layers we want and the number of neurons per layer. We can use vary this architecture to steadily increase accuracy.
 
