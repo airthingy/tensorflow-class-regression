@@ -869,6 +869,17 @@ python3 simple_nn.py
 
 Our network does a reasonable job.
 
+## Compare with Keras
+When you build your own highlevel Tensorflow utility  you should try to crosscheck with other wellknown libraries like Keras. The same problem we solved here is also solved using ``tf.Keras`` in ``keras_nn.py``. Open the file and have a look at it.
+
+Run the code.
+
+```
+python3 keras_nn.py
+```
+
+How does the result compare with own utility library?
+
 # Workshop - Regression Using Neural Network
 Our linear regression model achieved reasonable accuracy on the AirBnB price prediction problem. Unfortunately, linear regression can not deal with non-linearity. For example, if price starts to go up non-linearly with square footage then the model will start to have more inaccuracies at the higher end of floor area. A neural network doesn't have this problem. It can learn non-linear effect of a feature. Also, neural network gives us more control over how many layers we want and the number of neurons per layer. We can use vary this architecture to steadily increase accuracy.
 
